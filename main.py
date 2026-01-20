@@ -1,66 +1,66 @@
-#imports pygame package
+import sys
+
 import pygame
-
-#import all values from constants.py
-from constants import *
-
-#import Player class from player.py
+from asteroid import Asteroid
+from asteroidfield import AsteroidField
+from constants import SCREEN_HEIGHT, SCREEN_WIDTH
+from logger import log_event, log_state
 from player import Player
+from shot import Shot
+
 
 def main():
-    #initialize pygame and values
     pygame.init()
-
-    #create pygame clock
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
-    #create dt variable
+
+    updatable = pygame.sprite.Group()
+    drawable = pygame.sprite.Group()
+    asteroids = pygame.sprite.Group()
+    shots = pygame.sprite.Group()
+
+    Asteroid.containers = (asteroids, updatable, drawable)
+    Shot.containers = (shots, updatable, drawable)
+    AsteroidField.containers = updatable
+    asteroid_field = AsteroidField()
+
+    Player.containers = (updatable, drawable)
+
+    player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+
     dt = 0
 
-    #instantiate player ship object, assign to Player1 variable
-    Player1 = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+    while True:
+        log_state()
 
-    #create a screen with the width and height from constants.py
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-    #display startup text
-    print ("Starting Asteroids!")
-    print (f"Screen width: {SCREEN_WIDTH}")
-    print (f"Screen height: {SCREEN_HEIGHT}")
-
-
-    
-
-#set parameter for game loop
-    running = True
-#create loop to draw game screen
-    while running == True:
-        #quit game if pygame.QUIT occurs
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
-            
-        #update player object before rendering
-        Player1.update(dt)
 
-        #fill the screen with black color
+        updatable.update(dt)
+
+        for asteroid in asteroids:
+            if asteroid.collides_with(player):
+                log_event("player_hit")
+                print("Game over!")
+                sys.exit()
+
+            for shot in shots:
+                if asteroid.collides_with(shot):
+                    log_event("asteroid_shot")
+                    shot.kill()
+                    asteroid.split()
+
         screen.fill("black")
 
-        
+        for obj in drawable:
+            obj.draw(screen)
 
-        #use player1 variable and .draw(screen) to draw the player ship
-        Player1.draw(screen)
-
-
-        #update the display
         pygame.display.flip()
 
-        #pause the game loop for 1/60 of a second
-        #this is to make the game run at 60 frames per second
-        #additionally, update dt variable
-        dt = clock.tick(60) / 1000.0  # convert milliseconds to seconds
+        # limit the framerate to 60 FPS
+        dt = clock.tick(60) / 1000
 
 
-#runs only if this file is run directly
-#this allows us to import this file without running the main function
 if __name__ == "__main__":
-   main()
+    main()
